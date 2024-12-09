@@ -1,32 +1,32 @@
-import { markovChain, STATES, matrix } from "./markov.js";
-
-class robot {
-  constructor(name, speed, batterySize) { }
-  batteryLevel = 100;
-  currentStates = {};
-  seeing = {};
-  inProximity = {};
-  getCurrentStates() { }
-  yRotate() { }
-}
-
-try {
-  const mc = new markovChain(matrix);
-  let arr = Array(matrix.length).fill(0);
-  for (let i = 0; i < 1000; i++) {
-    let x = mc.newState(STATES.movingFwd);
-    arr[x.state]++;
-  }
-  console.log(arr);
-} catch (error) {
-  console.error(error.message);
-}
-
-// --- Alternative Decision-Making Block ---
+// decisionModel.js
+const STATES = Object.freeze({
+  movingFwd: 0,
+  movingFwdDecelerate: 1,
+  movingBack: 2,
+  rotatingLeft: 3,
+  rotatingRight: 4,
+  awaiting: 5,
+  seeingObjAhead: 6,
+  seeingObjProximal: 7,
+  collectingObj: 8,
+  collectingObjFinished: 9,
+  collisionDetected: 10,
+  seeingObstacleAhead: 11,
+  seeingObstacleProximal: 12,
+  chargingNeeded: 13,
+  charging: 14,
+  chargingFinished: 15,
+  seeingChgStationAhead: 16,
+  seeingChgStationProximal: 17,
+});
 
 class DecisionModel {
+  constructor() {
+    this.currentState = STATES.awaiting;
+  }
+
   /**
-   * Resolves conflicting states based on predefined priorities.
+   * Resolve conflicting states based on predefined prioritie.
    * @param {number[]} states - Array of detected states.
    * @returns {number} - The resolved state.
    */
@@ -44,7 +44,7 @@ class DecisionModel {
   }
 
   /**
-   * Decides the next state based on current state and sensory input.
+   * Decide the next state based on current state and sensory input.
    * @param {number} currentState - The robot's current state.
    * @param {number[]} sensoryStates - States reported by sensors.
    * @returns {{ state: number, angularSpeed: number }} - The next state and angular speed.
@@ -75,3 +75,5 @@ class DecisionModel {
     }
   }
 }
+
+export default DecisionModel;
