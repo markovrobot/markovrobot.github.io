@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.169.0/+esm';
 
 function getRandomPositionInCell(cell, padding = 1) {
     const { minX, maxX, minZ, maxZ } = cell;

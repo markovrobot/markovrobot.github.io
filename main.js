@@ -1,5 +1,5 @@
-import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.169.0/+esm';
+import { OrbitControls } from 'https://unpkg.com/three@0.169.0/examples/jsm/controls/OrbitControls.js';
 import { createEnvironment } from './environment.js';
 import { createRobot } from './robot.js';
 import { MarkovChain, STATES, matrix } from './markov.js';
