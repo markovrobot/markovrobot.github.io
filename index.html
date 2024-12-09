@@ -10,67 +10,6 @@
     </style>
 </head>
 <body>
-    <!-- Use ES Modules for imports -->
-    <script type="module">
-        import * as THREE from 'three';
-        import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-        import { createEnvironment } from './environment.js';
-        import { createRobot } from './robot.js';
-        import { MarkovChain, STATES, matrix } from './markov.js';
-        import { RobotUI } from './ui.js';
-        import { RobotController, checkStateTransitions } from './utils.js';
-
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x87ceeb);
-
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        document.body.appendChild(renderer.domElement);
-
-        camera.position.set(0, 10, 15);
-        camera.lookAt(0, 0, 0);
-
-        const controls = new OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-        controls.dampingFactor = 0.05;
-
-        // Lighting setup
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-        scene.add(ambientLight);
-
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-        directionalLight.position.set(5, 10, 5);
-        directionalLight.castShadow = true;
-        directionalLight.shadow.mapSize.width = 2048;
-        directionalLight.shadow.mapSize.height = 2048;
-        scene.add(directionalLight);
-
-        // Environment and robot
-        createEnvironment(scene);
-        const robot = createRobot();
-        robot.position.set(0, 1, 0);
-        scene.add(robot);
-
-        const robotController = new RobotController(scene, robot);
-        const robotMarkovChain = new MarkovChain(matrix);
-
-        function animate() {
-            requestAnimationFrame(animate);
-            controls.update();
-            renderer.render(scene, camera);
-        }
-
-        animate();
-
-        // Handle window resize
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-    </script>
+    <script type="module" src="./main.js"></script>
 </body>
 </html>
