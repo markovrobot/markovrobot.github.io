@@ -1,4 +1,4 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.169.0/+esm';
+import * as THREE from 'three';
 
 export function createRobot() {
     // robot Body
