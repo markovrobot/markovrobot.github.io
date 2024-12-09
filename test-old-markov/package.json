@@ -1,0 +1,8 @@
+{
+  "name": "markov-robot",
+  "version": "1.0.0",
+  "author": "Group 3 MATH UN2015 Fall 2024",
+  "description": "Markov chains and other math models implementation",
+  "main": "robot.js",
+  "type": "module"
+}
