@@ -1,7 +1,33 @@
 import * as THREE from 'three';
 
+function getRandomPositionInCell(cell, padding = 1) {
+    const { minX, maxX, minZ, maxZ } = cell;
+    const x = Math.random() * (maxX - minX - 2 * padding) + minX + padding;
+    const z = Math.random() * (maxZ - minZ - 2 * padding) + minZ + padding;
+    return [x, 0, z];
+}
+
+function generateGrid(bounds, rows, cols) {
+    const cellWidth = (bounds.maxX - bounds.minX) / cols;
+    const cellHeight = (bounds.maxZ - bounds.minZ) / rows;
+    const grid = [];
+
+    for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+            grid.push({
+                minX: bounds.minX + col * cellWidth,
+                maxX: bounds.minX + (col + 1) * cellWidth,
+                minZ: bounds.minZ + row * cellHeight,
+                maxZ: bounds.minZ + (row + 1) * cellHeight
+            });
+        }
+    }
+
+    return grid;
+}
+
 export function createEnvironment(scene) {
-    // Floor - keep large for infinite feel
+    // Floor
     const floorGeometry = new THREE.PlaneGeometry(1000, 1000);
     const floorMaterial = new THREE.MeshStandardMaterial({
         color: 0x808080,
@@ -13,20 +39,26 @@ export function createEnvironment(scene) {
     floor.receiveShadow = true;
     scene.add(floor);
 
-    // Create play area walls
-    const wallGeometry = new THREE.BoxGeometry(0.5, 4, 30); // Thinner, taller walls
+    // Walls
+    const wallGeometry = new THREE.BoxGeometry(0.5, 4, 30);
     const wallMaterial = new THREE.MeshStandardMaterial({
         color: 0x555555,
         roughness: 0.7,
         metalness: 0.1
     });
 
-    // Create enclosed play area with walls
+    const bounds = {
+        minX: -14,
+        maxX: 14,
+        minZ: -14,
+        maxZ: 14
+    };
+
     const wallPositions = [
         { pos: [15, 2, 0], rot: 0 },      // Right wall
         { pos: [-15, 2, 0], rot: 0 },     // Left wall
-        { pos: [0, 2, 15], rot: Math.PI/2 },  // Back wall
-        { pos: [0, 2, -15], rot: Math.PI/2 }  // Front wall
+        { pos: [0, 2, 15], rot: Math.PI / 2 },  // Back wall
+        { pos: [0, 2, -15], rot: Math.PI / 2 }  // Front wall
     ];
 
     wallPositions.forEach(({ pos, rot }) => {
@@ -53,50 +85,63 @@ export function createEnvironment(scene) {
     chargingStation.userData.type = 'chargingStation';
     scene.add(chargingStation);
 
-    // Obstacles (Pillars)
+    // Grid-based distribution
+    const rows = 4;
+    const cols = 4;
+    const grid = generateGrid(bounds, rows, cols);
+    const usedCells = new Set();
+
+    // Obstacles
     const pillarGeometry = new THREE.CylinderGeometry(0.5, 0.5, 4, 16);
     const pillarMaterial = new THREE.MeshStandardMaterial({
         color: 0x8b4513,
         roughness: 0.8,
         metalness: 0.2
     });
-    const pillarPositions = [
-        [-5, 2, -5],
-        [5, 2, 5],
-        [-5, 2, 5],
-        [5, 2, -5]
-    ];
-    pillarPositions.forEach(pos => {
+
+    const numPillars = 6;
+    for (let i = 0; i < numPillars; i++) {
+        let cell;
+        do {
+            cell = grid[Math.floor(Math.random() * grid.length)];
+        } while (usedCells.has(cell));
+        usedCells.add(cell);
+
+        const pos = getRandomPositionInCell(cell);
+        pos[1] = 2;
         const pillar = new THREE.Mesh(pillarGeometry, pillarMaterial);
         pillar.position.set(...pos);
         pillar.castShadow = true;
         pillar.receiveShadow = true;
         pillar.userData.type = 'obstacle';
         scene.add(pillar);
-    });
+    }
 
-    // Collectible Objects - Raised to robot's vision height
+    // Collectibles
     const collectibleGeometry = new THREE.SphereGeometry(0.3, 16, 16);
     const collectibleMaterial = new THREE.MeshStandardMaterial({
         color: 0xffd700,
         roughness: 0.3,
         metalness: 0.8,
-        emissive: 0xffd700,  // Make orbs glow slightly
+        emissive: 0xffd700,
         emissiveIntensity: 0.2
     });
-    const collectiblePositions = [
-        [-5, 1, 0],    // Between front and back left pillars
-        [5, 1, 0],     // Between front and back right pillars
-        [0, 1, -5],    // Between front pillars
-        [0, 1, 5],     // Between back pillars
-        [0, 1, 0]      // Center
-    ];
-    collectiblePositions.forEach(pos => {
+
+    const numCollectibles = 8;
+    for (let i = 0; i < numCollectibles; i++) {
+        let cell;
+        do {
+            cell = grid[Math.floor(Math.random() * grid.length)];
+        } while (usedCells.has(cell));
+        usedCells.add(cell);
+
+        const pos = getRandomPositionInCell(cell);
+        pos[1] = 1;
         const collectible = new THREE.Mesh(collectibleGeometry, collectibleMaterial);
         collectible.position.set(...pos);
         collectible.castShadow = true;
         collectible.receiveShadow = true;
         collectible.userData.type = 'collectible';
         scene.add(collectible);
-    });
+    }
 }

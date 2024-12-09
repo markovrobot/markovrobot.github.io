@@ -1,3 +1,5 @@
+import { STATES } from './markov.js';
+
 export class RobotUI {
     constructor(onPauseToggle, onSpeedChange) {
         this.container = document.createElement('div');
@@ -9,7 +11,8 @@ export class RobotUI {
         this.container.style.color = 'white';
         this.container.style.fontFamily = 'Arial, sans-serif';
         this.container.style.borderRadius = '5px';
-        this.container.style.width = '250px';
+        this.container.style.width = '300px';
+        this.container.style.zIndex = '1000';
 
         // state and energy Elements
         this.stateElement = document.createElement('div');
@@ -23,6 +26,7 @@ export class RobotUI {
         this.probabilitiesElement = document.createElement('div');
         this.probabilitiesElement.style.minHeight = '150px';
         this.probabilitiesElement.style.overflowY = 'auto';
+        this.probabilitiesElement.style.fontFamily = 'monospace';
 
         // energy bar
         this.energyBarContainer = document.createElement('div');
@@ -114,13 +118,17 @@ export class RobotUI {
     }
 
     updateState(state) {
-        this.stateElement.innerHTML = `<strong>Current State:</strong> ${state}`;
+        let stateName = state;
+        if (typeof state === 'number') {
+            stateName = Object.keys(STATES).find(key => STATES[key] === state) || state;
+        }
+        this.stateElement.innerHTML = `<strong>Current State:</strong> ${stateName}`;
     }
 
     updateEnergy(energy) {
         this.energyElement.innerHTML = `<strong>Energy:</strong> ${energy}%`;
         this.energyBar.style.width = `${energy}%`;
-        
+
         if (energy > 60) {
             this.energyBar.style.backgroundColor = '#4CAF50';
         } else if (energy > 30) {
@@ -134,23 +142,27 @@ export class RobotUI {
         const table = document.createElement('table');
         table.style.width = '100%';
         table.style.borderSpacing = '5px';
-        
-        const probabilityEntries = Object.entries(probabilities)
+
+        const probabilityEntries = probabilities
+            .map((prob, i) => [i, prob])
             .filter(([_, value]) => value > 0)
-            .map(([state, prob]) => {
+            .map(([stateIndex, prob]) => {
                 const row = document.createElement('tr');
                 const stateCell = document.createElement('td');
                 const probCell = document.createElement('td');
-                stateCell.textContent = state;
+
+                const stateName = Object.keys(STATES).find(key => STATES[key] === parseInt(stateIndex)) || stateIndex;
+
+                stateCell.textContent = stateName;
                 probCell.textContent = `${(prob * 100).toFixed(1)}%`;
                 probCell.style.textAlign = 'right';
                 row.appendChild(stateCell);
                 row.appendChild(probCell);
                 return row;
             });
-        
+
         probabilityEntries.forEach(row => table.appendChild(row));
-        
+
         this.probabilitiesElement.innerHTML = '<br><strong>Transition Probabilities:</strong><br>';
         this.probabilitiesElement.appendChild(table);
     }
@@ -159,4 +171,3 @@ export class RobotUI {
         this.orbCounterElement.innerHTML = `<strong>Orbs Collected:</strong> ${count}`;
     }
 }
-            
