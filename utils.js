@@ -26,7 +26,7 @@ export class RobotController {
         this.collectedOrbs = 0;
         this.raycastRange = 6;
         this.lastStateCheck = 0;
-        this.pickupRange = 2;
+        this.pickupRange = 2.2;
         this.stateCheckInterval = 100;
         this.stateTimeoutDuration = 2000;
         this.lastStateChangeTime = performance.now();
