@@ -1,4 +1,4 @@
-import * as THREE from './node_modules/three/build/three.module.js';
+import * as THREE from 'three';
 
 function getRandomPositionInCell(cell, padding = 1) {
     const { minX, maxX, minZ, maxZ } = cell;

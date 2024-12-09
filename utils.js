@@ -1,4 +1,4 @@
-import * as THREE from './node_modules/three/build/three.module.js';
+import * as THREE from 'three';
 import { STATES } from './markov.js';
 
 export function checkStateTransitions(state, matrix) {
