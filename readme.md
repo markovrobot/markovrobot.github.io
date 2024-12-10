@@ -6,7 +6,7 @@
 
 Modern robotics relies on decision-making under uncertainty. Markov chains can serve as a powerful mathematical tool to model probabilistic state transitions.
 
-In this project, we decided to use [Three.js][https://threejs.org] as a 3D engine.
+In this project, we decided to use [Three.js](https://threejs.org) as a 3D engine.
 
 ## Realization
 
