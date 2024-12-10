@@ -71,19 +71,35 @@ export function createEnvironment(scene) {
         scene.add(wall);
     });
 
-    // Charging Station
+    // Charging Stations
     const stationGeometry = new THREE.BoxGeometry(2, 0.5, 2);
     const stationMaterial = new THREE.MeshStandardMaterial({
         color: 0x00ff00,
         roughness: 0.3,
         metalness: 0.7
     });
-    const chargingStation = new THREE.Mesh(stationGeometry, stationMaterial);
-    chargingStation.position.set(-8, 0.25, -8);
-    chargingStation.castShadow = true;
-    chargingStation.receiveShadow = true;
-    chargingStation.userData.type = 'chargingStation';
-    scene.add(chargingStation);
+    // Original station - raised to be visible to rays
+    const chargingStation1 = new THREE.Mesh(stationGeometry, stationMaterial);
+    chargingStation1.position.set(-8, 1, -8);  // Changed y from 0.25 to 1
+    chargingStation1.castShadow = true;
+    chargingStation1.receiveShadow = true;
+    chargingStation1.userData.type = 'chargingStation';
+    scene.add(chargingStation1);
+
+    // Additional stations - also at ray height
+    const chargingStation2 = new THREE.Mesh(stationGeometry, stationMaterial);
+    chargingStation2.position.set(8, 1, 8);    // y = 1
+    chargingStation2.castShadow = true;
+    chargingStation2.receiveShadow = true;
+    chargingStation2.userData.type = 'chargingStation';
+    scene.add(chargingStation2);
+
+    const chargingStation3 = new THREE.Mesh(stationGeometry, stationMaterial);
+    chargingStation3.position.set(-8, 1, 8);   // y = 1
+    chargingStation3.castShadow = true;
+    chargingStation3.receiveShadow = true;
+    chargingStation3.userData.type = 'chargingStation';
+    scene.add(chargingStation3);
 
     // Grid-based distribution
     const rows = 4;

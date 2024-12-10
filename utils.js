@@ -26,7 +26,7 @@ export class RobotController {
         this.collectedOrbs = 0;
         this.raycastRange = 6;
         this.lastStateCheck = 0;
-        this.pickupRange = 2.2;
+        this.pickupRange = 2;
         this.stateCheckInterval = 100;
         this.stateTimeoutDuration = 2000;
         this.lastStateChangeTime = performance.now();
@@ -94,24 +94,55 @@ export class RobotController {
     
         let nearestCollectibleDistance = Infinity;
         let nearestObstacleDistance = Infinity;
+        let nearestStationDistance = Infinity;
     
-        // Raycasting for both "ahead" and "proximal" states
+        // Check for collectibles in pickup range
+        const collectiblesInRange = this.scene.children.filter(obj => {
+            if (obj.userData.type === 'collectible' && obj.visible) {
+                const distance = this.robot.position.distanceTo(obj.position);
+                return distance < this.pickupRange;
+            }
+            return false;
+        });
+    
+        if (collectiblesInRange.length > 0) {
+            detectedStates.add(STATES.seeingObjProximal);
+        }
+    
+        // Check for charging station in range when energy is low
+        if (this.energy < 30) {
+            const stationsInRange = this.scene.children.filter(obj => {
+                if (obj.userData.type === 'chargingStation') {
+                    const distance = this.robot.position.distanceTo(obj.position);
+                    return distance < this.pickupRange;
+                }
+                return false;
+            });
+    
+            if (stationsInRange.length > 0) {
+                detectedStates.add(STATES.seeingChgStationProximal);
+            }
+        }
+    
+        // Ray detection for objects and stations
         angles.forEach((angle, index) => {
             const rayDirection = direction.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), angle);
             this.raycaster.set(this.robot.position.clone(), rayDirection);
     
             const collectibles = this.scene.children.filter(obj => obj.userData.type === 'collectible' && obj.visible);
             const obstacles = this.scene.children.filter(obj => obj.userData.type === 'obstacle' || obj.userData.type === 'wall');
+            const stations = this.scene.children.filter(obj => obj.userData.type === 'chargingStation');
     
             const collectibleHits = this.raycaster.intersectObjects(collectibles);
             const obstacleHits = this.raycaster.intersectObjects(obstacles);
+            const stationHits = this.raycaster.intersectObjects(stations);
     
-            // Handle collectible detections - only add seeing states
+            // Handle collectible detections
             if (collectibleHits.length > 0) {
                 const distance = collectibleHits[0].distance;
                 nearestCollectibleDistance = Math.min(nearestCollectibleDistance, distance);
     
-                if (distance < this.proximityRange) {
+                if (distance < this.proximityRange && !detectedStates.has(STATES.seeingObjProximal)) {
                     detectedStates.add(STATES.seeingObjProximal);
                 } else if (distance < this.raycastRange) {
                     detectedStates.add(STATES.seeingObjAhead);
@@ -130,13 +161,36 @@ export class RobotController {
                 }
             }
     
-            this.updateRayVisualization(index, this.robot.position.clone(), rayDirection, collectibleHits[0] || obstacleHits[0]);
+            // Handle charging station detections when energy is low
+            if (this.energy < 30 && stationHits.length > 0) {
+                const distance = stationHits[0].distance;
+                nearestStationDistance = Math.min(nearestStationDistance, distance);
+    
+                if (distance < this.proximityRange && !detectedStates.has(STATES.seeingChgStationProximal)) {
+                    detectedStates.add(STATES.seeingChgStationProximal);
+                } else if (distance < this.raycastRange) {
+                    detectedStates.add(STATES.seeingChgStationAhead);
+                }
+            }
+    
+            // Update ray visualization
+            const hitToShow = collectibleHits[0] || obstacleHits[0] || (this.energy < 30 ? stationHits[0] : null);
+            let hitType = 'none';
+            if (hitToShow) {
+                if (hitToShow.object.userData.type === 'collectible') hitType = 'collectible';
+                else if (hitToShow.object.userData.type === 'chargingStation') hitType = 'charging';
+                else hitType = 'obstacle';
+            }
+            this.updateRayVisualization(index, this.robot.position.clone(), rayDirection, hitToShow, hitType);
         });
     
-        // Removed collectingObj detection - now handled by matrix transitions
+        // Add chargingNeeded state if energy is low
+        if (this.energy < 30) {
+            detectedStates.add(STATES.chargingNeeded);
+        }
     
         return Array.from(detectedStates);
-    }     
+    }
 
     moveRobot(state, deltaTime) {
         const currentTime = performance.now();
@@ -266,23 +320,31 @@ export class RobotController {
                 }
                 return state;
 
-            case STATES.charging:
-                return state;
-
-            case STATES.chargingFinished:
-                return STATES.awaiting;
-
-            case STATES.seeingChgStationAhead:
-                if (!this.checkForwardCollision()) {
-                    this.moveInDirection(speed * 0.7, false);
-                }
-                return state;
-
-            case STATES.seeingChgStationProximal:
-                if (!this.checkForwardCollision()) {
-                    this.moveInDirection(speed * 0.3, false);
-                }
-                return state;
+                case STATES.charging:
+                    // Charge until full
+                    this.energy = Math.min(100, this.energy + deltaTime * 30);
+                    if (this.energy >= 100) {
+                        return STATES.chargingFinished;
+                    }
+                    return state;
+                
+                case STATES.chargingFinished:
+                    if (currentTime - this.lastStateChangeTime > 200) {
+                        return STATES.awaiting;
+                    }
+                    return state;
+                
+                case STATES.seeingChgStationAhead:
+                    if (!this.checkForwardCollision()) {
+                        this.moveInDirection(speed * 0.7, false);
+                    }
+                    return state;
+                
+                case STATES.seeingChgStationProximal:
+                    if (!this.checkForwardCollision()) {
+                        this.moveInDirection(speed * 0.3, false);
+                    }
+                    return state;
 
             default:
                 return STATES.awaiting;
@@ -400,23 +462,34 @@ export class RobotController {
                position.z < bounds.minZ || position.z > bounds.maxZ;
     }
 
-    updateRayVisualization(index, start, direction, hit) {
+    updateRayVisualization(index, start, direction, hit, hitType) {
         let endPoint, rayColor;
     
         if (hit) {
             endPoint = start.clone().add(direction.clone().multiplyScalar(hit.distance));
-            rayColor = hit.object.userData.type === 'collectible' ? 0x00ff00 : 0xff0000; // Green for collectibles, red for obstacles
+            switch(hitType) {
+                case 'collectible':
+                    rayColor = 0x00ff00; // Green
+                    break;
+                case 'charging':
+                    rayColor = 0x0000ff; // Blue
+                    break;
+                case 'obstacle':
+                    rayColor = 0xff0000; // Red
+                    break;
+                default:
+                    rayColor = 0xffff00; // Yellow
+            }
         } else {
             endPoint = start.clone().add(direction.clone().multiplyScalar(this.raycastRange));
-            rayColor = 0xffff00; // Yellow for no collision
+            rayColor = 0xffff00;
         }
     
-        // Update detection rays
         const points = [start, endPoint];
         this.rayLines[index].geometry.setFromPoints(points);
         this.rayLines[index].material.color.setHex(rayColor);
     
-        // Update proximity rays (shorter range)
+        // Update proximity rays
         const proximityEnd = start.clone().add(direction.clone().multiplyScalar(this.proximityRange));
         this.proximityRayLines[index].geometry.setFromPoints([start, proximityEnd]);
     }
